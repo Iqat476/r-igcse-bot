@@ -1,4 +1,5 @@
 import { Reputation } from "@/mongo";
+import { RepRoles } from "@/mongo/schemas/RepRoles";
 import type { DiscordClient } from "@/registry/DiscordClient";
 import BaseCommand, {
 	type DiscordChatInputCommandInteraction
@@ -71,6 +72,28 @@ export default class extends BaseCommand {
 			});
 			return;
 		}
+
+		const addRoles = await RepRoles.find({
+			guildId: interaction.guildId,
+			rep: { lte: newRep }
+		})
+
+		addRoles.forEach(async (doc) => {
+			const role = await interaction.guild.roles.fetch(doc.roleId);
+			if (!role) return;
+			await interaction.member.roles.add(role);
+		})
+
+		const removeRoles = await RepRoles.find({
+			guildId: interaction.guildId,
+			rep: { gt: newRep }
+		})
+
+		removeRoles.forEach(async (doc) => {
+			const role = await interaction.guild.roles.fetch(doc.roleId);
+			if (!role) return;
+			await interaction.member.roles.remove(role);
+		})
 
 		await interaction.reply({
 			content: `Changed ${user.tag} rep to ${newRep}`
